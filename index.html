@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>トマトタイマー | ポモドーロタイマー + タスク管理</title>
+  <meta name="description" content="25分集中・5分休憩のポモドーロテクニックで作業効率を最大化。タスク管理と統計ダッシュボード付き。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app" id="app">
+    <!-- ヘッダー -->
+    <header class="header">
+      <div class="header-left">
+        <span class="logo">🍅</span>
+        <h1 class="app-title">トマトタイマー</h1>
+      </div>
+      <nav class="header-nav">
+        <button class="nav-btn active" data-view="timer" id="nav-timer">タイマー</button>
+        <button class="nav-btn" data-view="stats" id="nav-stats">統計</button>
+        <button class="nav-btn" data-view="settings" id="nav-settings">⚙️</button>
+      </nav>
+      <button class="theme-toggle" id="theme-toggle" title="テーマ切替">🌙</button>
+    </header>
+
+    <!-- タイマー画面 -->
+    <main class="view active" id="view-timer">
+      <div class="timer-section">
+        <!-- セッションタイプ -->
+        <div class="session-tabs">
+          <button class="session-tab active" data-type="focus" id="tab-focus">🍅 集中</button>
+          <button class="session-tab" data-type="break" id="tab-break">☕ 休憩</button>
+          <button class="session-tab" data-type="long-break" id="tab-long-break">🌿 長休憩</button>
+        </div>
+
+        <!-- タイマー円形表示 -->
+        <div class="timer-ring-container">
+          <svg class="timer-ring" viewBox="0 0 260 260">
+            <circle class="timer-ring-bg" cx="130" cy="130" r="120" />
+            <circle class="timer-ring-progress" cx="130" cy="130" r="120" id="timer-progress" />
+          </svg>
+          <div class="timer-display">
+            <span class="timer-time" id="timer-time">25:00</span>
+            <span class="timer-label" id="timer-label">集中タイム</span>
+          </div>
+        </div>
+
+        <!-- タイマーコントロール -->
+        <div class="timer-controls">
+          <button class="timer-btn secondary" id="btn-reset" title="リセット">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 1 9 9 9.75 9.75 0 0 1-6.74-2.74L3 21"/><path d="M3 10V3h7"/></svg>
+          </button>
+          <button class="timer-btn primary" id="btn-start">
+            <svg class="icon-play" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+            <svg class="icon-pause hidden" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+          </button>
+          <button class="timer-btn secondary" id="btn-skip" title="スキップ">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5,4 15,12 5,20" fill="currentColor"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+          </button>
+        </div>
+
+        <!-- 環境音プリセット -->
+        <div class="ambient-section">
+          <h3 class="section-title">🎵 環境音</h3>
+          <div class="preset-chips" id="preset-chips">
+            <button class="preset-chip" data-preset="none">なし</button>
+          </div>
+        </div>
+
+        <!-- ポモドーロカウント -->
+        <div class="pomodoro-count" id="pomodoro-count">
+          <span class="tomato-icons"></span>
+        </div>
+      </div>
+
+      <!-- タスクリスト -->
+      <div class="task-section">
+        <h3 class="section-title">📋 今日のタスク</h3>
+        <div class="task-input-wrapper">
+          <input type="text" class="task-input" id="task-input" placeholder="タスクを追加..." />
+          <button class="task-add-btn" id="task-add-btn">+</button>
+        </div>
+        <ul class="task-list" id="task-list"></ul>
+      </div>
+    </main>
+
+    <!-- 統計画面 -->
+    <main class="view" id="view-stats">
+      <div class="stats-container">
+        <h2 class="stats-title">📊 集中統計</h2>
+        <div class="stats-summary">
+          <div class="stat-card">
+            <span class="stat-value" id="stat-today">0</span>
+            <span class="stat-label">今日 (分)</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="stat-week">0</span>
+            <span class="stat-label">今週 (分)</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="stat-total">0</span>
+            <span class="stat-label">累計 (分)</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="stat-pomodoros">0</span>
+            <span class="stat-label">🍅 累計</span>
+          </div>
+        </div>
+        <div class="chart-container">
+          <h3>今週の集中時間</h3>
+          <canvas id="weekly-chart" width="600" height="250"></canvas>
+        </div>
+      </div>
+    </main>
+
+    <!-- 設定画面 -->
+    <main class="view" id="view-settings">
+      <div class="settings-container">
+        <h2 class="settings-title">⚙️ 設定</h2>
+        <div class="setting-group">
+          <h3>タイマー時間 (分)</h3>
+          <div class="setting-row">
+            <label>🍅 集中</label>
+            <input type="number" id="setting-focus" min="1" max="120" value="25" />
+          </div>
+          <div class="setting-row">
+            <label>☕ 休憩</label>
+            <input type="number" id="setting-break" min="1" max="30" value="5" />
+          </div>
+          <div class="setting-row">
+            <label>🌿 長休憩</label>
+            <input type="number" id="setting-long-break" min="1" max="60" value="15" />
+          </div>
+          <div class="setting-row">
+            <label>🔄 長休憩までの回数</label>
+            <input type="number" id="setting-long-break-interval" min="2" max="10" value="4" />
+          </div>
+        </div>
+        <div class="setting-group">
+          <h3>通知</h3>
+          <div class="setting-row">
+            <label>ブラウザ通知</label>
+            <label class="toggle">
+              <input type="checkbox" id="setting-notification" checked />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <label>自動スタート</label>
+            <label class="toggle">
+              <input type="checkbox" id="setting-auto-start" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="audio-engine.js"></script>
+  <script src="presets.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
