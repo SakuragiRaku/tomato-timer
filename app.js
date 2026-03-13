@@ -130,11 +130,6 @@
       return;
     }
 
-    // AudioContextのresume（ユーザーインタラクション必須）
-    if (typeof audioEngine !== 'undefined') {
-      audioEngine.resume();
-    }
-
     timerState.isRunning = true;
     els.iconPlay.classList.add('hidden');
     els.iconPause.classList.remove('hidden');
@@ -183,10 +178,8 @@
       renderPomodoroCount();
       saveState();
 
-      // 通知
       sendNotification('🍅 集中タイム終了！', '休憩を取りましょう。');
 
-      // 次は休憩
       if (timerState.pomodoroCount % settings.longBreakInterval === 0) {
         switchSession('long-break');
       } else {
@@ -231,18 +224,15 @@
     const secs = timerState.remaining % 60;
     els.timerTime.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 
-    // プログレスリング
     const circumference = 2 * Math.PI * 120;
     const progress = timerState.remaining / timerState.total;
     const offset = circumference * (1 - progress);
     els.timerProgress.style.strokeDasharray = circumference;
     els.timerProgress.style.strokeDashoffset = offset;
 
-    // ラベル
     const labels = { focus: '集中タイム', break: '☕ 休憩', 'long-break': '🌿 長休憩' };
     els.timerLabel.textContent = labels[timerState.type];
 
-    // タイトル更新
     document.title = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')} - トマトタイマー`;
   }
 
@@ -315,29 +305,25 @@
     `).join('');
   }
 
-  async function playPreset(presetId) {
-    if (typeof audioEngine === 'undefined' || presetId === 'none') return;
-
-    await audioEngine.init();
+  function playPreset(presetId) {
+    if (typeof AudioEngine === 'undefined' || presetId === 'none') return;
 
     const presets = getAllPresets();
     const preset = presets.find(p => p.id === presetId);
     if (!preset) return;
 
-    // 音源を読み込み
-    for (const s of preset.sounds) {
-      const soundDef = SOUND_LIBRARY.find(lib => lib.id === s.id);
-      if (soundDef && !audioEngine.buffers[s.id]) {
-        await audioEngine.loadSound(s.id, `sounds/${soundDef.file}`);
-      }
-    }
+    AudioEngine.stopAll();
+    AudioEngine.setMasterVolume(preset.masterVolume || 0.7);
 
-    audioEngine.applyPreset(preset);
+    for (const s of preset.sounds) {
+      AudioEngine.play(s.id);
+      AudioEngine.setVolume(s.id, s.volume || 0.5);
+    }
   }
 
   function stopAmbientSound() {
-    if (typeof audioEngine !== 'undefined') {
-      audioEngine.stopAll();
+    if (typeof AudioEngine !== 'undefined') {
+      AudioEngine.stopAll();
     }
   }
 
