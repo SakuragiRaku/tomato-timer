@@ -134,11 +134,6 @@
     els.iconPlay.classList.add('hidden');
     els.iconPause.classList.remove('hidden');
 
-    // 環境音再生（集中タイム時）
-    if (timerState.type === 'focus' && timerState.currentPreset !== 'none') {
-      playPreset(timerState.currentPreset);
-    }
-
     timerInterval = setInterval(() => {
       timerState.remaining--;
       renderTimer();
@@ -159,7 +154,6 @@
 
   function resetTimer() {
     pauseTimer();
-    stopAmbientSound();
     setSessionDuration();
     renderTimer();
   }
@@ -305,7 +299,7 @@
     `).join('');
   }
 
-  function playPreset(presetId) {
+  async function playPreset(presetId) {
     if (typeof AudioEngine === 'undefined' || presetId === 'none') return;
 
     const presets = getAllPresets();
@@ -316,7 +310,9 @@
     AudioEngine.setMasterVolume(preset.masterVolume || 0.7);
 
     for (const s of preset.sounds) {
-      AudioEngine.play(s.id);
+      const soundDef = SOUND_LIBRARY.find(lib => lib.id === s.id);
+      const url = soundDef ? `sounds/${soundDef.file}` : null;
+      await AudioEngine.play(s.id, url);
       AudioEngine.setVolume(s.id, s.volume || 0.5);
     }
   }
@@ -547,7 +543,7 @@
       if (action === 'delete') deleteTask(id);
     });
 
-    // プリセット
+    // プリセット（タイマーと独立して即再生）
     els.presetChips.addEventListener('click', (e) => {
       const chip = e.target.closest('.preset-chip');
       if (!chip) return;
@@ -557,11 +553,10 @@
       timerState.currentPreset = chip.dataset.preset;
       saveState();
 
-      if (timerState.isRunning && timerState.type === 'focus') {
-        stopAmbientSound();
-        if (timerState.currentPreset !== 'none') {
-          playPreset(timerState.currentPreset);
-        }
+      // 即座に環境音を切り替え
+      stopAmbientSound();
+      if (timerState.currentPreset !== 'none') {
+        playPreset(timerState.currentPreset);
       }
     });
 
